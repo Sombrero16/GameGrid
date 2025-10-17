@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Asteroid Shooter Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Sound library for in-game audio effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+    <style>
+        :root {
+            --glow-color: #00ffff;
+            --danger-color: #ff4141;
+            --star-color: #ffff00;
+            --shield-color: #4d94ff;
+            --boss-color: #ff00ff;
+            --nova-color: #cc00cc;
+            --rapidfire-color: #ff9900;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0c0c14;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        #game-container {
+            position: relative;
+            width: 95%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--glow-color);
+            box-shadow: 0 0 25px var(--glow-color), inset 0 0 15px rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+        }
+
+        canvas {
+            background-color: transparent;
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        /* --- UI Layers --- */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            background: rgba(12, 12, 20, 0.8);
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 8px;
+        }
+
+        .hidden { display: none !important; }
+
+        h1 {
+            font-size: 3em;
+            color: var(--glow-color);
+            text-shadow: 0 0 10px var(--glow-color);
+            margin: 0 0 20px 0;
+        }
+        
+        p {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .button {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            padding: 15px 30px;
+            margin-top: 20px;
+            border: 2px solid var(--glow-color);
+            border-radius: 5px;
+            background: transparent;
+            color: var(--glow-color);
+            cursor: pointer;
+            text-shadow: 0 0 5px var(--glow-color);
+            transition: all 0.2s ease;
+        }
+        
+        .button.secondary {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin: 10px;
+        }
+
+        .button:hover {
+            background: var(--glow-color);
+            color: #0c0c14;
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        /* --- In-Game UI --- */
+        #in-game-ui {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2em;
+            pointer-events: none;
+        }
+        #in-game-ui > div {
+             text-shadow: 0 0 5px #fff;
+        }
+        #stars-display { color: var(--star-color); text-shadow: 0 0 5px var(--star-color); }
+        #lives-display { color: var(--danger-color); text-shadow: 0 0 5px var(--danger-color); }
+
+        #boss-health-bar-container {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--boss-color);
+            border-radius: 5px;
+            display: none;
+        }
+
+        #boss-health-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--boss-color);
+            border-radius: 4px;
+            transition: width 0.2s;
+        }
+
+        /* --- Menu Screens --- */
+        .menu-screen {
+             justify-content: flex-start;
+             overflow-y: auto;
+        }
+        .menu-container {
+             width: 100%;
+             max-width: 600px;
+             margin-top: 20px;
+        }
+        .menu-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .menu-header h1 { margin: 0; }
+
+        .upgrade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .upgrade-info { text-align: left; }
+        .upgrade-info h3 { margin: 0 0 5px 0; }
+        .upgrade-info p { margin: 0; font-size: 0.8em; }
+        .upgrade-button {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1em;
+            padding: 8px 15px;
+            border: 1px solid var(--star-color);
+            border-radius: 5px;
+            background: transparent;
+            color: var(--star-color);
+            cursor: pointer;
+        }
+        .upgrade-button.maxed {
+            border-color: #888;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .upgrade-button:not(.maxed):hover {
+             background: var(--star-color);
+             color: #0c0c14;
+        }
+        
+        /* --- Skin Store --- */
+        #skin-store {
+            justify-content: flex-start;
+        }
+        .skin-category {
+            margin-bottom: 20px;
+        }
+        .skin-category h2 {
+            text-align: left;
+            border-bottom: 1px solid var(--glow-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .skin-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .skin-option {
+            padding: 10px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            min-width: 80px;
+        }
+        .skin-option.equipped {
+            border-color: var(--glow-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+        .skin-preview {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            background: #333;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .skin-preview canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .skin-option.locked {
+            filter: grayscale(100%) brightness(50%);
+            opacity: 0.7;
+        }
+        .skin-cost {
+            font-size: 0.9em;
+            color: var(--star-color);
+            margin-top: 5px;
+        }
+        .skin-name {
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+
+        /* --- Mobile Controls --- */
+        #mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: none; /* Hidden by default */
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em;
+            color: rgba(0, 255, 255, 0.7);
+            user-select: none;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        #mobile-shoot {
+            width: 90px;
+            height: 90px;
+            font-size: 1.5em;
+            color: rgba(255, 65, 65, 0.8);
+            border-color: rgba(255, 65, 65, 0.6);
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="in-game-ui" class="hidden">
+            <div id="score-display">Score: 0</div>
+            <div id="stars-display">★ 0</div>
+            <div id="lives-display">♥ 3</div>
+            <div id="boss-health-bar-container">
+                <div id="boss-health-bar"></div>
+            </div>
+        </div>
+
+        <div id="main-menu" class="screen">
+             <h1>ASTEROID SHOOTER</h1>
+             <button id="start-game-button" class="button">START GAME</button>
+             <div>
+                <button id="show-upgrades-button" class="button secondary">UPGRADES</button>
+                <button id="show-skins-button" class="button secondary">SKINS</button>
+             </div>
+             <p>Total Stars: <span id="total-stars-main-menu">0</span></p>
+        </div>
+
+        <div id="upgrade-menu" class="screen menu-screen hidden">
+            <div class="menu-header">
+                <h1>UPGRADES</h1>
+                <button id="back-to-main-from-upgrades" class="button secondary">BACK</button>
+            </div>
+            <div id="upgrade-container" class="menu-container">
+            </div>
+        </div>
+
+        <div id="skin-store" class="screen menu-screen hidden">
+             <div class="menu-header">
+                <h1>SKIN STORE</h1>
+                <button id="back-to-main-from-skins" class="button secondary">BACK</button>
+            </div>
+            <div id="skin-container" class="menu-container">
+                <div class="skin-category">
+                    <h2>Ship Geometry</h2>
+                    <div id="geometry-options" class="skin-options"></div>
+                </div>
+                <div class="skin-category">
+                    <h2>Hull Color</h2>
+                    <div id="color-options" class="skin-options"></div>
+                </div>
+                 <div class="skin-category">
+                    <h2>Decals</h2>
+                    <div id="decal-options" class="skin-options"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="screen hidden">
+            <h1>GAME OVER</h1>
+            <p id="final-score"></p>
+            <p id="final-stars"></p>
+            <button id="restart-button" class="button">RETURN TO MENU</button>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="mobile-left" class="mobile-btn">‹</div>
+        <div id="mobile-shoot" class="mobile-btn">FIRE</div>
+        <div id="mobile-right" class="mobile-btn">›</div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // =================================================================
+        // --- SETUP & CONFIG ---
+        // =================================================================
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+
+        const ui = {
+            inGame: document.getElementById('in-game-ui'),
+            scoreDisplay: document.getElementById('score-display'),
+            starsDisplay: document.getElementById('stars-display'),
+            livesDisplay: document.getElementById('lives-display'),
+            bossHealthBarContainer: document.getElementById('boss-health-bar-container'),
+            bossHealthBar: document.getElementById('boss-health-bar'),
+            mainMenu: document.getElementById('main-menu'),
+            totalStarsMainMenu: document.getElementById('total-stars-main-menu'),
+            showUpgradesButton: document.getElementById('show-upgrades-button'),
+            showSkinsButton: document.getElementById('show-skins-button'),
+            upgradeMenu: document.getElementById('upgrade-menu'),
+            upgradeContainer: document.getElementById('upgrade-container'),
+            backToMainFromUpgrades: document.getElementById('back-to-main-from-upgrades'),
+            skinStore: document.getElementById('skin-store'),
+            geometryOptionsContainer: document.getElementById('geometry-options'),
+            colorOptionsContainer: document.getElementById('color-options'),
+            decalOptionsContainer: document.getElementById('decal-options'),
+            backToMainFromSkins: document.getElementById('back-to-main-from-skins'),
+            startGameButton: document.getElementById('start-game-button'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            finalScoreEl: document.getElementById('final-score'),
+            finalStarsEl: document.getElementById('final-stars'),
+            restartButton: document.getElementById('restart-button'),
+            mobileLeft: document.getElementById('mobile-left'),
+            mobileRight: document.getElementById('mobile-right'),
+            mobileShoot: document.getElementById('mobile-shoot')
+        };
+        
+        const computedStyle = getComputedStyle(document.documentElement);
+        const COLORS = {
+            DANGER: computedStyle.getPropertyValue('--danger-color').trim(),
+            STAR: computedStyle.getPropertyValue('--star-color').trim(),
+            SHIELD: computedStyle.getPropertyValue('--shield-color').trim(),
+            NOVA: computedStyle.getPropertyValue('--nova-color').trim(),
+            RAPIDFIRE: computedStyle.getPropertyValue('--rapidfire-color').trim()
+        };
+
+        let sfx;
+        try {
+            if (typeof Tone === 'undefined') throw new Error("Tone is not defined");
+            sfx = {
+                shoot: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }, volume: -15 }).toDestination(),
+                explosion: new Tone.NoiseSynth({ noise: { type: 'brown' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 0.2 }, volume: -5 }).toDestination(),
+                hit: new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 5, envelope: { attack: 0.001, decay: 0.3, sustain: 0.01, release: 0.3 }, volume: -5 }).toDestination(),
+                powerup: new Tone.FMSynth({ harmonicity: 2, modulationIndex: 3, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }, volume: -10 }).toDestination(),
+                lifeup: new Tone.FMSynth({ harmonicity: 3, modulationIndex: 5, envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.3 }, volume: -8 }).toDestination(),
+                uiClick: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 }, volume: -20 }).toDestination()
+            };
+        } catch (e) {
+            console.warn("Tone.js failed to initialize, sound effects will be disabled.", e);
+            const dummySynth = { triggerAttackRelease: () => {} };
+            sfx = { shoot: dummySynth, explosion: dummySynth, hit: dummySynth, powerup: dummySynth, lifeup: dummySynth, uiClick: dummySynth };
+        }
+        
+        // =================================================================
+        // --- GAME STATE & DATA ---
+        // =================================================================
+
+        let gameState = 'MENU';
+        let keys = {};
+        let totalStars = 0;
+        let starsCollectedThisRound = 0;
+        let score = 0;
+        let player;
+        let bullets = [], asteroids = [], enemies = [], enemyBullets = [], powerups = [], stars = [], particles = [];
+        let boss = null;
+        let bossCount = 0;
+        const BASE_BOSS_SCORE = 5000;
+        let nextBossScore = BASE_BOSS_SCORE;
+        const BASE_BOSS_HEALTH = 100;
+        let spawnTimers = { asteroid: 0, enemy: 0 };
+        
+        const PLAYER_BASE_STATS = { lives: 3, speed: 4, fireRate: 400, bulletDamage: 1, bulletCount: 1, bulletSpread: 0.1 };
+        const ENEMY_TYPES = {
+            interceptor: { hp: 1, speed: 4, width: 20, height: 30, score: 200 },
+            fighter: { hp: 3, speed: 2.5, width: 30, height: 30, score: 500 },
+        };
+        const UPGRADES = {
+            speed: { name: 'Ship Speed', levels: [4, 4.5, 5, 5.5, 6], costs: [12, 30, 60, 125], currentLevel: 0 },
+            fireRate: { name: 'Fire Rate', levels: [400, 350, 300, 250, 200], costs: [15, 35, 75, 150], currentLevel: 0 },
+            bulletCount: { name: 'Bullet Count', levels: [1, 2, 3], costs: [50, 125], currentLevel: 0 },
+            bulletSpread: { name: 'Bullet Spread', levels: [0.1, 0.2, 0.3], costs: [40, 100], currentLevel: 0 },
+        };
+        const SKINS = {
+            geometries: [
+                { id: 'triangle', name: 'Classic', cost: 0, unlocked: true, draw: (p, ctx, color) => {
+                    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(p.x, p.y - 15);
+                    ctx.lineTo(p.x - 15, p.y + 15); ctx.lineTo(p.x + 15, p.y + 15);
+                    ctx.closePath(); ctx.fill();
+                }},
+                { id: 'modern_jet', name: 'Modern Jet', cost: 100, unlocked: false, draw: (p, ctx, color) => {
+                    ctx.fillStyle = color; ctx.beginPath();
+                    ctx.moveTo(p.x, p.y - 20); ctx.lineTo(p.x + 10, p.y); ctx.lineTo(p.x + 20, p.y + 10);
+                    ctx.lineTo(p.x + 5, p.y + 20); ctx.lineTo(p.x - 5, p.y + 20); ctx.lineTo(p.x - 20, p.y + 10);
+                    ctx.lineTo(p.x - 10, p.y); ctx.closePath(); ctx.fill();
+                }},
+                { id: 'rounded_ship', name: 'Rounded Ship', cost: 75, unlocked: false, draw: (p, ctx, color) => {
+                    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y + 5, 20, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(p.x, p.y - 10, 10, 0, Math.PI * 2); ctx.fill();
+                }},
+                { id: 'delta_wing', name: 'Delta Wing', cost: 125, unlocked: false, draw: (p, ctx, color) => {
+                    ctx.fillStyle = color; ctx.beginPath();
+                    ctx.moveTo(p.x, p.y - 20); ctx.lineTo(p.x + 30, p.y + 15);
+                    ctx.lineTo(p.x - 30, p.y + 15); ctx.closePath(); ctx.fill();
+                }},
+                { id: 'heart_shape', name: 'Heart', cost: 150, unlocked: false, draw: (p, ctx, color) => {
+                    ctx.fillStyle = color; ctx.beginPath();
+                    const top = p.y - 10, left = p.x - 18, right = p.x + 18, bottom = p.y + 20;
+                    ctx.moveTo(p.x, bottom);
+                    ctx.bezierCurveTo(right, top + 10, right, top - 10, p.x + 10, top - 10);
+                    ctx.bezierCurveTo(p.x, top - 10, p.x, top + 10, p.x, top + 10);
+                    ctx.bezierCurveTo(p.x, top + 10, p.x, top - 10, p.x - 10, top - 10);
+                    ctx.bezierCurveTo(left, top - 10, left, top + 10, p.x, bottom);
+                    ctx.fill();
+                }}
+            ],
+            colors: [
+                { id: 'green', name: 'Green', value: '#00ff00' }, { id: 'cyan', name: 'Cyan', value: '#00ffff' },
+                { id: 'yellow', name: 'Yellow', value: '#ffff00' }, { id: 'orange', name: 'Orange', value: '#ff9900' },
+                { id: 'white', name: 'White', value: '#ffffff' }, { id: 'red', name: 'Red', value: '#ff0000' },
+                { id: 'blue', name: 'Blue', value: '#0000ff' }, { id: 'purple', name: 'Purple', value: '#800080' }
+            ],
+            decals: [
+                { id: 'none', name: 'None', cost: 0, unlocked: true, draw: () => {} },
+                { id: 'stripes_v', name: 'Vert. Stripes', cost: 75, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(p.x - 2, p.y - 10, 4, 20);
+                }},
+                { id: 'stripes_d_left', name: 'Diag. Stripes (L)', cost: 90, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-Math.PI / 4);
+                    ctx.fillRect(-10, -10, 4, 20); ctx.fillRect(-2, -10, 4, 20); ctx.fillRect(6, -10, 4, 20);
+                    ctx.restore();
+                }},
+                { id: 'stripes_d_right', name: 'Diag. Stripes (R)', cost: 90, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.PI / 4);
+                    ctx.fillRect(-10, -10, 4, 20); ctx.fillRect(-2, -10, 4, 20); ctx.fillRect(6, -10, 4, 20);
+                    ctx.restore();
+                }},
+                { id: 'dots_single', name: 'Single Dot', cost: 40, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.beginPath(); ctx.arc(p.x, p.y + 5, 5, 0, Math.PI * 2); ctx.fill();
+                }},
+                { id: 'dots_triple', name: 'Triple Dots', cost: 60, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.beginPath(); ctx.arc(p.x, p.y - 5, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(p.x - 8, p.y + 5, 3, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(p.x + 8, p.y + 5, 3, 0, Math.PI * 2); ctx.fill();
+                }},
+                { id: 'circle_fill', name: 'Circle Fill', cost: 50, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath(); ctx.arc(p.x, p.y + 5, 10, 0, Math.PI * 2); ctx.fill();
+                }},
+                { id: 'square_outline', name: 'Square Outline', cost: 60, unlocked: false, draw: (p, ctx) => {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+                    ctx.strokeRect(p.x - 10, p.y - 5, 20, 20);
+                }},
+                { id: 'triangle_fill', name: 'Triangle Fill', cost: 50, unlocked: false, draw: (p, ctx) => {
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath();
+                    ctx.moveTo(p.x, p.y - 5); ctx.lineTo(p.x - 8, p.y + 10); ctx.lineTo(p.x + 8, p.y + 10);
+                    ctx.closePath(); ctx.fill();
+                }},
+                { id: 'cross_mark', name: 'Cross Mark', cost: 65, unlocked: false, draw: (p, ctx) => {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(p.x - 10, p.y); ctx.lineTo(p.x + 10, p.y); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y - 10); ctx.lineTo(p.x, p.y + 10); ctx.stroke();
+                }},
+                { id: 'target_reticle', name: 'Target Reticle', cost: 80, unlocked: false, draw: (p, ctx) => {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(p.x, p.y + 5, 10, 0, Math.PI * 2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y - 5); ctx.lineTo(p.x, p.y + 15); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(p.x - 10, p.y + 5); ctx.lineTo(p.x + 10, p.y + 5); ctx.stroke();
+                }}
+            ]
+        };
+        let equippedSkin = { geometry: 'triangle', color: 'green', decal: 'none' };
+
+        // =================================================================
+        // --- INITIALIZATION & CORE GAME FLOW ---
+        // =================================================================
+        
+        function init() {
+            resizeCanvas();
+            loadGameData();
+            renderAllMenus();
+            gameLoop();
+        }
+        
+        async function startGame() {
+            try {
+                if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+            } catch (e) {
+                console.warn("Could not start audio context.", e);
+            }
+            gameState = 'PLAYING';
+            ui.mainMenu.classList.add('hidden');
+            ui.inGame.classList.remove('hidden');
+            
+            score = 0;
+            starsCollectedThisRound = 0;
+            player = {
+                x: canvas.width / 2, y: canvas.height - 60, width: 30, height: 30, dx: 0,
+                shielded: false, shieldTime: 0, lastShot: 0, lives: PLAYER_BASE_STATS.lives,
+                rapidFireActive: false, rapidFireTimeoutId: null,
+                originalFireRate: UPGRADES.fireRate.levels[UPGRADES.fireRate.currentLevel],
+                speed: UPGRADES.speed.levels[UPGRADES.speed.currentLevel],
+                fireRate: UPGRADES.fireRate.levels[UPGRADES.fireRate.currentLevel],
+                bulletCount: UPGRADES.bulletCount.levels[UPGRADES.bulletCount.currentLevel],
+                bulletSpread: UPGRADES.bulletSpread.levels[UPGRADES.bulletSpread.currentLevel],
+            };
+            
+            [bullets, asteroids, enemies, enemyBullets, powerups, stars, particles] = [[], [], [], [], [], [], []];
+            
+            boss = null; bossCount = 0; nextBossScore = BASE_BOSS_SCORE;
+            ui.bossHealthBarContainer.style.display = 'none';
+            spawnTimers = { asteroid: 0, enemy: 200 };
+            
+            updateInGameUI();
+        }
+
+        function endGame() {
+            gameState = 'GAMEOVER';
+            ui.inGame.classList.add('hidden');
+            ui.gameOverScreen.classList.remove('hidden');
+            ui.finalScoreEl.textContent = `Final Score: ${score}`;
+            totalStars += starsCollectedThisRound;
+            ui.finalStarsEl.textContent = `You collected ★${starsCollectedThisRound}!`;
+            saveGameData();
+            renderAllMenus();
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'PLAYING') {
+                handleInput();
+                updatePlayer(); 
+                updateAndDrawCollection(bullets, drawBullet);
+                updateAndDrawCollection(asteroids, drawAsteroid);
+                updateAndDrawCollection(enemies, drawEnemy, updateEnemyLogic);
+                updateAndDrawCollection(enemyBullets, drawEnemyBullet);
+                updateAndDrawCollection(powerups, drawPowerup, updatePowerupLogic);
+                updateAndDrawCollection(stars, drawStar, updateStarLogic);
+                updateAndDrawCollection(particles, drawParticle, p => { p.ttl--; return p.ttl > 0; });
+                
+                if (!boss) {
+                    spawnAsteroids(); 
+                    spawnEnemies();
+                    if (score >= nextBossScore) spawnBoss();
+                } else {
+                    updateBoss();
+                }
+                
+                handleCollisions();
+                if (boss) drawBoss();
+                drawPlayer();
+            } else {
+                updateAndDrawCollection(particles, drawParticle, p => { p.ttl--; return p.ttl > 0; });
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resizeCanvas() {
+            canvas.width = gameContainer.clientWidth;
+            canvas.height = gameContainer.clientHeight;
+        }
+
+        // =================================================================
+        // --- INPUT HANDLING ---
+        // =================================================================
+        
+        function handleInput() {
+            if (!player) return;
+            player.dx = 0;
+            if (keys['ArrowLeft']) player.dx = -player.speed;
+            if (keys['ArrowRight']) player.dx = player.speed;
+            if (keys[' ']) shoot();
+        }
+        
+        function shoot() {
+            if (!player) return;
+            const now = Date.now();
+            if (now - player.lastShot > player.fireRate) {
+                sfx.shoot.triggerAttackRelease("C5", "8n");
+                player.lastShot = now;
+                const count = player.bulletCount;
+                const spread = player.bulletSpread;
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = (i - (count - 1) / 2) * spread;
+                    bullets.push({ 
+                        x: player.x, y: player.y - 15, width: 4, height: 10,
+                        dx: Math.sin(angle) * 8, dy: -Math.cos(angle) * 8,
+                        damage: PLAYER_BASE_STATS.bulletDamage
+                    });
+                }
+            }
+        }
+        
+        // =================================================================
+        // --- LOGIC & UPDATE FUNCTIONS ---
+        // =================================================================
+        
+        function updatePlayer() {
+            if (!player) return;
+            player.x += player.dx;
+            player.x = Math.max(15, Math.min(canvas.width - 15, player.x)); // Clamp position
+            if (player.shielded && Date.now() > player.shieldTime) player.shielded = false;
+        }
+        
+        function updateAndDrawCollection(collection, drawFn, logicFn = null) {
+            for (let i = collection.length - 1; i >= 0; i--) {
+                const item = collection[i];
+                if (!item) continue;
+                if (logicFn && !logicFn(item)) { collection.splice(i, 1); continue; }
+                item.x += item.dx || 0;
+                item.y += item.dy || 0;
+                if (item.y > canvas.height + 50 || item.y < -50 || item.x < -50 || item.x > canvas.width + 50) {
+                    collection.splice(i, 1);
+                } else {
+                    drawFn(item);
+                }
+            }
+        }
+        
+        function updateStarLogic(star) {
+            if (player) {
+                let shouldHome = star.isHoming;
+                if (!shouldHome && Math.hypot(player.x - star.x, player.y - star.y) < 80) {
+                    shouldHome = true;
+                    star.isHoming = true;
+                }
+                if (shouldHome) {
+                    const angle = Math.atan2(player.y - star.y, player.x - star.x);
+                    const speed = 7;
+                    star.dx = Math.cos(angle) * speed;
+                    star.dy = Math.sin(angle) * speed;
+                }
+            }
+            return true;
+        }
+
+        function updatePowerupLogic(powerup) {
+            if (player) {
+                if (!powerup.isHoming && Math.hypot(player.x - powerup.x, player.y - powerup.y) < 80) {
+                    powerup.isHoming = true;
+                }
+                if (powerup.isHoming) {
+                    const angle = Math.atan2(player.y - powerup.y, player.x - powerup.x);
+                    const speed = 6;
+                    powerup.dx = Math.cos(angle) * speed;
+                    powerup.dy = Math.sin(angle) * speed;
+                }
+            }
+            return true;
+        }
+
+        function updateEnemyLogic(enemy) {
+            if (!player) return false;
+            
+            if (enemy.state === 'entering' && Math.hypot(enemy.x - enemy.targetX, enemy.y - enemy.targetY) < enemy.speed * 2) {
+                enemy.state = 'attacking'; enemy.shotsLeft = 3; enemy.nextShot = Date.now();
+                enemy.dx *= 0.1; enemy.dy *= 0.1;
+            }
+
+            if (enemy.state === 'attacking') {
+                if (enemy.shotsLeft > 0 && Date.now() > enemy.nextShot) {
+                    const angleToPlayer = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                    enemyBullets.push({ x: enemy.x, y: enemy.y, width: 10, height: 10, dx: Math.cos(angleToPlayer) * 4, dy: Math.sin(angleToPlayer) * 4 });
+                    enemy.shotsLeft--;
+                    enemy.nextShot = Date.now() + 150;
+                }
+                if (enemy.shotsLeft <= 0) {
+                    enemy.state = 'leaving';
+                    const exitX = enemy.x < canvas.width / 2 ? -50 : canvas.width + 50;
+                    const exitY = Math.random() * canvas.height * 0.5;
+                    enemy.targetAngle = Math.atan2(exitY - enemy.y, exitX - enemy.x);
+                }
+            }
+            
+            if (enemy.state === 'leaving') {
+                enemy.dx = Math.cos(enemy.targetAngle) * enemy.speed;
+                enemy.dy = Math.sin(enemy.targetAngle) * enemy.speed;
+            }
+
+            const angleDiff = enemy.targetAngle - enemy.angle;
+            const shortestAngle = ((angleDiff % (Math.PI*2)) + Math.PI*3) % (Math.PI*2) - Math.PI;
+            if (Math.abs(shortestAngle) > 0.05) enemy.angle += Math.sign(shortestAngle) * enemy.rotationSpeed;
+            else enemy.angle = enemy.targetAngle;
+            
+            return true;
+        }
+
+        function updateBoss() {
+            if (!boss) return;
+            if (boss.hp <= boss.maxHp / 2 && boss.phase === 'fighting') {
+                boss.phase = 'enraged';
+                boss.dx *= 1.5;
+            }
+            if (boss.phase === 'entering') {
+                boss.y += 1;
+                if (boss.y >= 120) boss.phase = 'fighting';
+            } else {
+                boss.x += boss.dx;
+                if (boss.x < boss.width/2 || boss.x > canvas.width - boss.width/2) boss.dx *= -1;
+                boss.attackPatterns.forEach(p => {
+                    if (boss.phase === p.requiredPhase || (boss.phase === 'enraged' && p.requiredPhase === 'fighting')) {
+                        p.update(boss, player);
+                    }
+                });
+            }
+        }
+        
+        // =================================================================
+        // --- DRAWING FUNCTIONS ---
+        // =================================================================
+        
+        function drawPlayer() {
+            if (!player) return;
+            const colorData = SKINS.colors.find(c => c.id === equippedSkin.color);
+            const decalData = SKINS.decals.find(d => d.id === equippedSkin.decal);
+            const geometryData = SKINS.geometries.find(g => g.id === equippedSkin.geometry);
+            const hullColor = player.rapidFireActive ? COLORS.RAPIDFIRE : (colorData?.value || '#00ff00');
+            
+            if (geometryData?.draw) geometryData.draw(player, ctx, hullColor);
+            if(decalData?.draw) decalData.draw(player, ctx);
+
+            if (player.shielded) {
+                ctx.strokeStyle = COLORS.SHIELD; ctx.lineWidth = 3; ctx.beginPath();
+                ctx.arc(player.x, player.y, 30, 0, Math.PI * 2); ctx.stroke();
+            }
+        }
+        
+        const drawBullet = b => { ctx.fillStyle = b.color || '#ffdd00'; ctx.fillRect(b.x - 2, b.y - 5, 4, 10); };
+        const drawEnemyBullet = b => { ctx.fillStyle = COLORS.DANGER; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill(); };
+        
+        function drawStar(s) {
+            ctx.fillStyle = COLORS.STAR; ctx.strokeStyle = COLORS.STAR;
+            ctx.font = '20px Orbitron'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('★', s.x, s.y);
+            ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(s.x, s.y, 15, 0, Math.PI * 2); ctx.stroke();
+        }
+        
+        function drawAsteroid(ast) {
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath();
+            for (let i = 0; i < ast.sides; i++) {
+                const angle = (i / ast.sides) * Math.PI * 2;
+                const radius = ast.size * ast.shape[i];
+                const x = ast.x + Math.cos(angle) * radius; const y = ast.y + Math.sin(angle) * radius;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath(); ctx.stroke();
+        }
+
+        function drawEnemy(e) {
+            ctx.save();
+            ctx.translate(e.x, e.y); ctx.rotate(e.angle + Math.PI / 2);
+            ctx.fillStyle = COLORS.DANGER; ctx.strokeStyle = `hsl(0, 100%, ${40 + e.hp * 15}%)`;
+            ctx.lineWidth = 2; ctx.beginPath();
+            e.type === 'fighter' ? (ctx.moveTo(0, -15), ctx.lineTo(12, 10), ctx.lineTo(8, 15), ctx.lineTo(-8, 15), ctx.lineTo(-12, 10))
+                                : (ctx.moveTo(0, -15), ctx.lineTo(10, 15), ctx.lineTo(0, 5), ctx.lineTo(-10, 15));
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.restore();
+        }
+        
+        function drawPowerup(p) {
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
+            switch(p.type) {
+                case 'shield':
+                    ctx.fillStyle = COLORS.SHIELD; ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y-8); ctx.lineTo(p.x, p.y+8); ctx.moveTo(p.x-8, p.y); ctx.lineTo(p.x+8, p.y); ctx.stroke();
+                    break;
+                case 'nova':
+                    ctx.fillStyle = COLORS.NOVA; ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill();
+                    ctx.lineWidth = 1;
+                    for(let i=0; i<5; i++){
+                        let angle = (i/5) * Math.PI*2;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(angle)*10, p.y + Math.sin(angle)*10); ctx.stroke();
+                    }
+                    break;
+                case 'rapidfire':
+                    ctx.fillStyle = COLORS.RAPIDFIRE; ctx.beginPath(); ctx.arc(p.x, p.y, 12, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(p.x - 6, p.y - 6); ctx.lineTo(p.x + 6, p.y); ctx.lineTo(p.x - 6, p.y + 6);
+                    ctx.closePath(); ctx.stroke();
+                    break;
+                case 'life':
+                    ctx.fillStyle = COLORS.DANGER;
+                    ctx.beginPath();
+                    const top = p.y, left = p.x - 14, right = p.x + 14, bottom = p.y + 18;
+                    ctx.moveTo(p.x, bottom);
+                    ctx.bezierCurveTo(right, top + 8, right, top - 12, p.x + 9, top - 12);
+                    ctx.bezierCurveTo(p.x, top - 12, p.x, top - 2, p.x, top - 2);
+                    ctx.bezierCurveTo(p.x, top - 2, p.x, top - 12, p.x - 9, top - 12);
+                    ctx.bezierCurveTo(left, top - 12, left, top + 8, p.x, bottom);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+            }
+        }
+
+        function drawParticle(p) {
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.ttl / 60;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            ctx.globalAlpha = 1;
+        }
+
+        function drawBoss() {
+            if (boss?.draw) boss.draw(boss, ctx);
+        }
+        
+        // =================================================================
+        // --- SPAWNERS ---
+        // =================================================================
+
+        function spawnAsteroids() {
+            if (spawnTimers.asteroid++ > 80 - score / 300) {
+                spawnTimers.asteroid = 0;
+                const x = Math.random() * canvas.width;
+                const type = Math.random() > 0.3 ? 'small' : 'large';
+                asteroids.push(createAsteroid(x, -50, type));
+            }
+        }
+        function createAsteroid(x, y, type) {
+            const sides = Math.floor(Math.random() * 3) + 6;
+            const shape = Array.from({length: sides}, () => Math.random() * 0.4 + 0.8);
+            const size = type === 'large' ? 40 : 20;
+            return { x, y, size, type, sides, shape, width: size*2, height: size*2,
+                     dx: (Math.random() - 0.5) * 2, dy: type === 'large' ? 1 : 2, hp: type === 'large' ? 3 : 1 };
+        }
+        
+        function spawnEnemies() {
+            if (score > 500 && spawnTimers.enemy++ > 300 - score / 200) {
+                spawnTimers.enemy = 0;
+                const type = Math.random() > 0.4 ? 'interceptor' : 'fighter';
+                const stats = ENEMY_TYPES[type];
+                const spawnX = Math.random() < 0.5 ? -stats.width : canvas.width + stats.width;
+                const spawnY = Math.random() * canvas.height * 0.3;
+                const targetX = canvas.width / 2 + (Math.random() - 0.5) * (canvas.width * 0.6);
+                const targetY = canvas.height / 2 + (Math.random() - 0.5) * (canvas.height * 0.4);
+                const angle = Math.atan2(targetY - spawnY, targetX - spawnX);
+                enemies.push({ 
+                    ...stats, x: spawnX, y: spawnY, type, dx: Math.cos(angle) * stats.speed, dy: Math.sin(angle) * stats.speed,
+                    targetX, targetY, angle, targetAngle: angle, rotationSpeed: 0.1, state: 'entering'
+                });
+            }
+        }
+        
+        function spawnPowerup(x, y, typeOverride = null) {
+            const roll = Math.random();
+            let type = typeOverride || ((roll < 0.33) ? 'shield' : (roll < 0.66) ? 'nova' : 'rapidfire');
+            powerups.push({ x, y, width: 30, height: 30, dx: 0, dy: 2, type });
+        }
+        
+        // =================================================================
+        // --- BOSS SYSTEM ---
+        // =================================================================
+        
+        const bossTemplates = [
+            { name: 'Vindicator', colors: { main: '#aa00aa', accent: '#600060', stroke: COLORS.NOVA }, draw: (b, localCtx) => {
+                    const x = b.x, y = b.y; localCtx.fillStyle = b.phase === 'enraged' ? b.colors.accent : b.colors.main;
+                    localCtx.strokeStyle = b.colors.stroke; localCtx.lineWidth = 3; localCtx.beginPath();
+                    localCtx.moveTo(x, y - 50); localCtx.lineTo(x + 100, y); localCtx.lineTo(x + 70, y + 50); localCtx.lineTo(x - 70, y + 50);
+                    localCtx.lineTo(x - 100, y); localCtx.closePath(); localCtx.fill(); localCtx.stroke();
+                    localCtx.fillStyle = b.colors.accent; localCtx.beginPath(); localCtx.rect(x - 70, y, 20, 20);
+                    localCtx.rect(x + 50, y, 20, 20); localCtx.fill(); localCtx.stroke();
+                    localCtx.fillStyle = b.colors.stroke; localCtx.beginPath(); localCtx.moveTo(x, y-25);
+                    localCtx.lineTo(x+20, y); localCtx.lineTo(x-20, y); localCtx.closePath(); localCtx.fill();
+                },
+                attackPatterns: [
+                    { name: 'wingCannons', nextShot: 0, requiredPhase: 'fighting', update: (b) => {
+                          if (Date.now() > b.attackPatterns[0].nextShot) {
+                              for(let i = -1; i <= 1; i+=2) {
+                                  enemyBullets.push({x: b.x + i*60, y: b.y + 20, width:10, height:10, dx: i * 1, dy: 4});
+                                  enemyBullets.push({x: b.x + i*60, y: b.y + 20, width:10, height:10, dx: i * 0.5, dy: 4});
+                              }
+                              b.attackPatterns[0].nextShot = Date.now() + (b.phase === 'enraged' ? 1500 : 2500);
+                          }
+                      }},
+                    { name: 'volleyShot', nextShot: 0, requiredPhase: 'enraged', update: (b, p) => {
+                          if (Date.now() > b.attackPatterns[1].nextShot) {
+                              if (p) {
+                                  const angle = Math.atan2(p.y - (b.y + 50), p.x - b.x);
+                                  for(let i=-1; i<=1; i++) enemyBullets.push({x: b.x, y: b.y + 50, width:10, height:10, dx: Math.cos(angle+i*0.2)*5, dy: Math.sin(angle+i*0.2)*5});
+                              }
+                              b.attackPatterns[1].nextShot = Date.now() + 2000;
+                          }
+                      }}
+                ]
+            },
+            { name: 'Juggernaut', colors: { main: '#607D8B', accent: '#37474F', stroke: '#B0BEC5' }, draw: (b, localCtx) => {
+                    const x = b.x, y = b.y; localCtx.fillStyle = b.phase === 'enraged' ? b.colors.accent : b.colors.main;
+                    localCtx.strokeStyle = b.colors.stroke; localCtx.lineWidth = 3;
+                    localCtx.beginPath(); localCtx.rect(x - 80, y - 40, 160, 80); localCtx.fill(); localCtx.stroke();
+                    localCtx.fillStyle = b.colors.accent; localCtx.beginPath(); localCtx.rect(x-70, y+40, 30, 20); localCtx.rect(x+40, y+40, 30, 20); localCtx.fill();
+                    localCtx.fillStyle = COLORS.DANGER; localCtx.beginPath(); localCtx.rect(x-15, y - 50, 30, 10); localCtx.fill();
+                },
+                attackPatterns: [
+                    { name: 'heavyCannons', nextShot: 0, requiredPhase: 'fighting', update: (b) => {
+                          if (Date.now() > b.attackPatterns[0].nextShot) {
+                              enemyBullets.push({x: b.x - 55, y: b.y + 50, width: 20, height: 20, dx: 0, dy: 3});
+                              enemyBullets.push({x: b.x + 55, y: b.y + 50, width: 20, height: 20, dx: 0, dy: 3});
+                              b.attackPatterns[0].nextShot = Date.now() + (b.phase === 'enraged' ? 1200 : 2000);
+                          }
+                      }},
+                    { name: 'sideGuns', nextShot: 0, requiredPhase: 'enraged', update: (b, p) => {
+                          if (Date.now() > b.attackPatterns[1].nextShot) {
+                             if(p) for(let i=-1; i<=1; i+=2){
+                                const angle = Math.atan2(p.y - b.y, p.x - (b.x + i*80));
+                                enemyBullets.push({x: b.x + i*80, y: b.y, width: 8, height: 8, dx: Math.cos(angle)*6, dy: Math.sin(angle)*6});
+                             }
+                             b.attackPatterns[1].nextShot = Date.now() + 800;
+                          }
+                      }}
+                ]
+            },
+            { name: 'Stinger', colors: { main: '#00838F', accent: '#004D40', stroke: '#4DD0E1' }, draw: (b, localCtx) => {
+                    const x = b.x, y = b.y; localCtx.fillStyle = b.phase === 'enraged' ? b.colors.accent : b.colors.main;
+                    localCtx.strokeStyle = b.colors.stroke; localCtx.lineWidth = 3;
+                    localCtx.beginPath(); localCtx.moveTo(x, y + 50); localCtx.lineTo(x - 80, y - 50);
+                    localCtx.lineTo(x + 80, y - 50); localCtx.closePath(); localCtx.fill(); localCtx.stroke();
+                    localCtx.fillStyle = '#FFFFFF'; localCtx.beginPath(); localCtx.arc(x, y - 30, 10, 0, Math.PI * 2); localCtx.fill();
+                },
+                attackPatterns: [
+                    { name: 'arcSweep', nextShot: 0, requiredPhase: 'fighting', angle: 0, update: (b) => {
+                          if (Date.now() > b.attackPatterns[0].nextShot) {
+                              const p = b.attackPatterns[0], speed = 5;
+                              for(let i=-2; i<=2; i++){
+                                  enemyBullets.push({x: b.x, y: b.y, width: 6, height: 6, dx: Math.cos(p.angle+i*0.2)*speed, dy: Math.sin(p.angle+i*0.2)*speed});
+                              }
+                              p.angle += 0.5;
+                              p.nextShot = Date.now() + (b.phase === 'enraged' ? 100 : 200);
+                          }
+                      }},
+                    { name: 'targetedBurst', nextShot: 0, requiredPhase: 'enraged', update: (b, p) => {
+                          if (Date.now() > b.attackPatterns[1].nextShot) {
+                             if(p) {
+                                const angle = Math.atan2(p.y - b.y, p.x - b.x);
+                                enemyBullets.push({x: b.x, y: b.y, width: 8, height: 8, dx: Math.cos(angle)*7, dy: Math.sin(angle)*7});
+                             }
+                             b.attackPatterns[1].nextShot = Date.now() + 1000;
+                          }
+                      }}
+                ]
+            }
+        ];
+        
+        function spawnBoss() {
+            const template = bossTemplates[bossCount % bossTemplates.length];
+            const health = Math.round(BASE_BOSS_HEALTH * Math.pow(1.5, bossCount));
+            boss = {
+                x: canvas.width/2, y: -100, width: 200, height: 100, dx: 2, dy: 0,
+                hp: health, maxHp: health, phase: 'entering', ...template
+            };
+            boss.attackPatterns.forEach(p => p.nextShot = Date.now() + 3000);
+            asteroids = []; enemies = [];
+            const barColor = boss.colors.stroke || COLORS.NOVA;
+            ui.bossHealthBarContainer.style.borderColor = barColor;
+            ui.bossHealthBar.style.backgroundColor = barColor;
+            ui.bossHealthBarContainer.style.display = 'block';
+            updateBossHealthBar();
+        }
+        
+        // =================================================================
+        // --- COLLISION & GAME RULES ---
+        // =================================================================
+
+        function handleCollisions() {
+            if (!player) return;
+
+            // Player bullets vs. enemies/asteroids
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let bulletHit = false;
+                for (let j = asteroids.length - 1; j >= 0; j--) {
+                    if (isColliding(bullets[i], asteroids[j])) {
+                        asteroids[j].hp -= bullets[i].damage;
+                        if (asteroids[j].hp <= 0) { handleAsteroidDestroyed(asteroids[j]); asteroids.splice(j, 1); }
+                        bulletHit = true; break;
+                    }
+                }
+                if(bulletHit) { bullets.splice(i, 1); continue; }
+
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    if (isColliding(bullets[i], enemies[j])) {
+                        enemies[j].hp -= bullets[i].damage;
+                        if (enemies[j].hp <= 0) { score += ENEMY_TYPES[enemies[j].type].score; createExplosion(enemies[j].x, enemies[j].y, COLORS.DANGER, 40); spawnPowerup(enemies[j].x, enemies[j].y); enemies.splice(j, 1); }
+                        bulletHit = true; break;
+                    }
+                }
+                 if(bulletHit) { bullets.splice(i, 1); continue; }
+                
+                if (boss && isColliding(bullets[i], boss)) {
+                    boss.hp -= bullets[i].damage; updateBossHealthBar();
+                    if (boss.hp <= 0) {
+                        score += 10000 * (bossCount + 1); bossCount++; nextBossScore = score + BASE_BOSS_SCORE;
+                        createExplosion(boss.x, boss.y, boss.colors.stroke, 200);
+                        for(let s=0; s<25; s++) stars.push({ x: boss.x + (Math.random()-0.5)*boss.width, y: boss.y + (Math.random()-0.5)*boss.height, width: 20, height: 20, dx: (Math.random()-0.5)*4, dy: (Math.random()-0.5)*4, isHoming: true });
+                        spawnPowerup(boss.x, boss.y, 'life'); // Spawn the heart
+                        boss = null; ui.bossHealthBarContainer.style.display = 'none';
+                    }
+                    bulletHit = true;
+                }
+                if(bulletHit) { createExplosion(bullets[i].x, bullets[i].y, boss ? boss.colors.stroke : '#fff', 5); bullets.splice(i, 1); }
+            }
+            
+            // Player vs. hazards
+            if (!player.shielded) {
+                 if (asteroids.some(a => isColliding(player, a)) || enemies.some(e => isColliding(player, e)) || (boss && isColliding(player, boss))) {
+                    playerHit();
+                 }
+                 for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                    if (isColliding(player, enemyBullets[i])) { playerHit(); enemyBullets.splice(i, 1); break; }
+                 }
+            }
+            
+            // Player vs. collectibles
+            powerups.forEach((p, i) => { if(isColliding(player, p)) { collectPowerup(p); powerups.splice(i, 1); }});
+            stars.forEach((s, i) => { if(isColliding(player, s)) { starsCollectedThisRound++; sfx.powerup.triggerAttackRelease("G5", "16n"); stars.splice(i, 1); updateInGameUI(); }});
+        }
+        
+        function isColliding(obj1, obj2) {
+            if (!obj1 || !obj2) return false;
+            const radius1 = (obj1.width + obj1.height) / 4;
+            const radius2 = (obj2.width + obj2.height) / 4;
+            return Math.hypot(obj1.x - obj2.x, obj1.y - obj2.y) < radius1 + radius2;
+        }
+
+        function handleAsteroidDestroyed(ast) {
+            score += ast.type === 'large' ? 100 : 50;
+            createExplosion(ast.x, ast.y, '#aaa', 15);
+            if (ast.type === 'large') {
+                asteroids.push(createAsteroid(ast.x - 10, ast.y, 'small'), createAsteroid(ast.x + 10, ast.y, 'small'));
+            } else {
+                 if (Math.random() < 0.3) stars.push({x: ast.x, y: ast.y, width: 20, height: 20, dx: (Math.random() - 0.5) * 2, dy: 2});
+                 if (Math.random() < 0.15) spawnPowerup(ast.x, ast.y);
+            }
+            updateInGameUI();
+        }
+        
+        function playerHit() {
+            if (!player || player.shielded) return;
+            sfx.hit.triggerAttackRelease("C2", "8n");
+            createExplosion(player.x, player.y, '#00ff00', 30);
+            player.lives--;
+            updateInGameUI();
+            if (player.lives <= 0) {
+                endGame();
+            } else {
+                player.shielded = true;
+                player.shieldTime = Date.now() + 2000;
+            }
+        }
+        
+        function fireNovaBurst() {
+            if (!player) return;
+            sfx.shoot.triggerAttackRelease("G4", "4n");
+            for (let i = 0; i < 24; i++) {
+                const angle = (i/24) * Math.PI * 2;
+                bullets.push({ x: player.x, y: player.y, width: 5, height: 5, dx: Math.cos(angle)*6, dy: Math.sin(angle)*6, damage: 1, color: COLORS.NOVA });
+            }
+        }
+
+        function collectPowerup(p) {
+            if (!player) return;
+            switch(p.type) {
+                case 'shield': sfx.powerup.triggerAttackRelease("E5", "16n"); player.shielded = true; player.shieldTime = Date.now() + 5000; break;
+                case 'nova': sfx.powerup.triggerAttackRelease("E5", "16n"); fireNovaBurst(); setTimeout(fireNovaBurst, 150); setTimeout(fireNovaBurst, 300); break;
+                case 'rapidfire':
+                    sfx.powerup.triggerAttackRelease("E5", "16n");
+                    if (player.rapidFireTimeoutId) clearTimeout(player.rapidFireTimeoutId);
+                    player.fireRate = 50; player.rapidFireActive = true;
+                    player.rapidFireTimeoutId = setTimeout(() => {
+                        player.fireRate = player.originalFireRate; player.rapidFireActive = false; player.rapidFireTimeoutId = null;
+                    }, 5000);
+                    break;
+                case 'life':
+                    if (player.lives < 9) { // Cap lives at 9 to not break UI
+                        player.lives++;
+                        sfx.lifeup.triggerAttackRelease("C6", "8n");
+                        updateInGameUI();
+                    }
+                    break;
+            }
+        }
+        
+        function createExplosion(x, y, color, count) {
+            sfx.explosion.triggerAttackRelease("2n");
+            for (let i = 0; i < count; i++) {
+                particles.push({ x, y, color, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, size: Math.random()*3+1, ttl: Math.random()*60+30 });
+            }
+        }
+
+        // =================================================================
+        // --- UI MANAGEMENT ---
+        // =================================================================
+        
+        function updateInGameUI() {
+            ui.scoreDisplay.textContent = `Score: ${score}`;
+            ui.starsDisplay.textContent = `★ ${starsCollectedThisRound}`;
+            ui.livesDisplay.textContent = `♥ ${player ? player.lives : PLAYER_BASE_STATS.lives}`;
+        }
+        
+        function updateBossHealthBar() {
+            if (!boss) return;
+            ui.bossHealthBar.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+        }
+
+        function renderAllMenus() {
+            renderUpgradeMenu();
+            renderSkinStore();
+            ui.totalStarsMainMenu.textContent = totalStars;
+        }
+
+        function renderUpgradeMenu() {
+            ui.upgradeContainer.innerHTML = '';
+            for (const key in UPGRADES) {
+                const upg = UPGRADES[key];
+                const isMaxed = upg.currentLevel >= upg.levels.length - 1;
+                const cost = isMaxed ? 'MAX' : `★${upg.costs[upg.currentLevel]}`;
+                ui.upgradeContainer.innerHTML += `
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <h3>${upg.name} (Lvl ${upg.currentLevel + 1})</h3>
+                            <p>Next: ${isMaxed ? '---' : upg.levels[upg.currentLevel + 1]}</p>
+                        </div>
+                        <button class="upgrade-button ${isMaxed ? 'maxed' : ''}" data-key="${key}">${cost}</button>
+                    </div>`;
+            }
+        }
+        
+        function drawShipPreview(canvasEl, geometryId, colorId, decalId) {
+            const pctx = canvasEl.getContext('2d');
+            pctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+            const geometryData = SKINS.geometries.find(g => g.id === geometryId);
+            const colorData = SKINS.colors.find(c => c.id === colorId);
+            const decalData = SKINS.decals.find(d => d.id === decalId);
+            const hullColor = colorData?.value || '#00ff00';
+            const previewShip = {x: canvasEl.width / 2, y: canvasEl.height / 2 + 5};
+            if (geometryData?.draw) geometryData.draw(previewShip, pctx, hullColor);
+            if(decalData?.draw) decalData.draw(previewShip, pctx);
+        }
+
+        function renderSkinStore() {
+            const renderCategory = (container, items, type) => {
+                container.innerHTML = '';
+                items.forEach(item => {
+                    const isEquipped = equippedSkin[type] === item.id;
+                    const option = document.createElement('div');
+                    // Colors don't have an unlocked property, so they should never be locked.
+                    const isLocked = item.unlocked === false; 
+                    option.className = `skin-option ${isEquipped ? 'equipped' : ''} ${isLocked ? 'locked' : ''}`;
+                    option.dataset.type = type;
+                    option.dataset.id = item.id;
+                    
+                    const previewCanvas = document.createElement('canvas');
+                    previewCanvas.width = 60; previewCanvas.height = 60;
+                    
+                    const tempGeo = type === 'geometry' ? item.id : equippedSkin.geometry;
+                    const tempColor = type === 'color' ? item.id : equippedSkin.color;
+                    const tempDecal = type === 'decal' ? item.id : equippedSkin.decal;
+                    drawShipPreview(previewCanvas, tempGeo, tempColor, tempDecal);
+
+                    option.innerHTML = `
+                        <div class="skin-preview"></div>
+                        <span class="skin-name">${item.name}</span>
+                        ${isLocked ? `<div class="skin-cost">★ ${item.cost}</div>` : ''}
+                    `;
+                    option.querySelector('.skin-preview').appendChild(previewCanvas);
+                    container.appendChild(option);
+                });
+            };
+
+            renderCategory(ui.geometryOptionsContainer, SKINS.geometries, 'geometry');
+            renderCategory(ui.colorOptionsContainer, SKINS.colors, 'color');
+            renderCategory(ui.decalOptionsContainer, SKINS.decals, 'decal');
+        }
+        
+        function handleUpgrade(e) {
+            if (e.target.classList.contains('upgrade-button')) {
+                sfx.uiClick.triggerAttackRelease("C4", "32n");
+                const key = e.target.dataset.key;
+                const upg = UPGRADES[key];
+                if (upg.currentLevel >= upg.levels.length - 1) return;
+                const cost = upg.costs[upg.currentLevel];
+                if (totalStars >= cost) {
+                    totalStars -= cost;
+                    upg.currentLevel++;
+                    renderAllMenus();
+                }
+            }
+        }
+
+        function handleSkinSelection(e) {
+            const option = e.target.closest('.skin-option');
+            if(!option) return;
+
+            sfx.uiClick.triggerAttackRelease("E4", "32n");
+            const type = option.dataset.type;
+            const id = option.dataset.id;
+            
+            const collection = type === 'color' ? SKINS.colors : SKINS[type + 's'];
+            const skinData = collection.find(s => s.id === id);
+
+            if (skinData.unlocked === false) { // Explicitly check for false
+                if (totalStars >= skinData.cost) {
+                    totalStars -= skinData.cost;
+                    skinData.unlocked = true;
+                    equippedSkin[type] = id;
+                } else { return; }
+            } else {
+                equippedSkin[type] = id;
+            }
+            renderSkinStore();
+            ui.totalStarsMainMenu.textContent = totalStars;
+            saveGameData();
+        }
+
+        // =================================================================
+        // --- SAVE & LOAD ---
+        // =================================================================
+
+        function saveGameData() {
+            const saveData = {
+                totalStars,
+                upgrades: { speed: UPGRADES.speed.currentLevel, fireRate: UPGRADES.fireRate.currentLevel, bulletCount: UPGRADES.bulletCount.currentLevel, bulletSpread: UPGRADES.bulletSpread.currentLevel },
+                skins: { equipped: equippedSkin, unlockedGeometries: SKINS.geometries.filter(g => g.unlocked).map(g => g.id), unlockedDecals: SKINS.decals.filter(d => d.unlocked).map(d => d.id) }
+            };
+            localStorage.setItem('asteroidShooterProData', JSON.stringify(saveData));
+        }
+
+        function loadGameData() {
+            const savedData = localStorage.getItem('asteroidShooterProData');
+            if (!savedData) return;
+            try {
+                const data = JSON.parse(savedData);
+                totalStars = data.totalStars || 0;
+                if (data.upgrades) for (const key in UPGRADES) {
+                    if (UPGRADES.hasOwnProperty(key) && typeof data.upgrades[key] === 'number') {
+                        const maxLevel = UPGRADES[key].levels.length - 1;
+                        UPGRADES[key].currentLevel = Math.max(0, Math.min(data.upgrades[key], maxLevel));
+                    }
+                }
+                if (data.skins) {
+                    equippedSkin = data.skins.equipped || { geometry: 'triangle', color: 'green', decal: 'none' };
+                    SKINS.geometries.forEach(g => { if (data.skins.unlockedGeometries?.includes(g.id)) g.unlocked = true; });
+                    SKINS.decals.forEach(d => { if (data.skins.unlockedDecals?.includes(d.id)) d.unlocked = true; });
+                }
+            } catch (e) {
+                console.error("Failed to parse saved data. Resetting.", e);
+                localStorage.removeItem('asteroidShooterProData');
+            }
+        }
+
+        // =================================================================
+        // --- EVENT LISTENERS ---
+        // =================================================================
+
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener('keydown', e => { keys[e.key] = true; });
+        document.addEventListener('keyup', e => { keys[e.key] = false; });
+        
+        ui.startGameButton.addEventListener('click', startGame);
+        ui.restartButton.addEventListener('click', () => {
+             sfx.uiClick.triggerAttackRelease("C4", "32n");
+             gameState = 'MENU';
+             ui.gameOverScreen.classList.add('hidden');
+             ui.mainMenu.classList.remove('hidden');
+             updateInGameUI();
+        });
+        
+        const setupMenuButton = (button, toHide, toShow, action) => {
+            button.addEventListener('click', () => {
+                sfx.uiClick.triggerAttackRelease("C4", "32n");
+                toHide.classList.add('hidden');
+                toShow.classList.remove('hidden');
+                if (action) action();
+            });
+        };
+        
+        setupMenuButton(ui.showUpgradesButton, ui.mainMenu, ui.upgradeMenu);
+        setupMenuButton(ui.backToMainFromUpgrades, ui.upgradeMenu, ui.mainMenu, () => { saveGameData(); renderAllMenus(); });
+        setupMenuButton(ui.showSkinsButton, ui.mainMenu, ui.skinStore, renderSkinStore);
+        setupMenuButton(ui.backToMainFromSkins, ui.skinStore, ui.mainMenu, () => { saveGameData(); renderAllMenus(); });
+        
+        ui.upgradeContainer.addEventListener('click', handleUpgrade);
+        ui.skinStore.addEventListener('click', handleSkinSelection);
+        
+        const setupMobileButton = (button, key) => {
+            button.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; });
+            button.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; });
+        };
+        setupMobileButton(ui.mobileLeft, 'ArrowLeft');
+        setupMobileButton(ui.mobileRight, 'ArrowRight');
+        setupMobileButton(ui.mobileShoot, ' ');
+        
+        init();
+    });
+    </script>
+</body>
+</html>
+

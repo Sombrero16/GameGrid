@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameGrid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        @keyframes subtle-pan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 10% 10%; }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a18; /* Darker, purplish-blue */
+            color: #E5E7EB;
+            /* Futuristic grid background */
+            background-image: radial-gradient(rgba(0, 191, 255, 0.12) 1px, transparent 1px);
+            background-size: 25px 25px;
+            animation: subtle-pan 15s linear infinite alternate;
+        }
+
+        .game-card {
+            background-color: rgba(31, 41, 55, 0.4); /* Semi-transparent dark gray */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(55, 65, 81, 0.8);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 0 35px rgba(0, 191, 255, 0.3);
+            border-color: rgba(0, 191, 255, 0.7);
+        }
+
+        .play-button {
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #00BFFF, #1E90FF);
+            border: 1px solid #1E90FF;
+            box-shadow: 0 0 15px rgba(30, 144, 255, 0.3);
+            color: #fff;
+        }
+
+        .play-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(30, 144, 255, 0.6);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #00BFFF, #8A2BE2); /* Deep Sky Blue to Blue Violet */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 12px rgba(0, 191, 255, 0.3);
+        }
+
+        header, footer {
+            background-color: rgba(10, 10, 24, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-color: rgba(0, 191, 255, 0.15);
+        }
+
+        .icon-glow {
+            filter: drop-shadow(0 0 8px rgba(0, 191, 255, 0.5));
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="py-6 px-4 sm:px-6 lg:px-8 border-b sticky top-0 z-50">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">GameGrid</h1>
+                <nav>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors duration-300 font-medium">Home</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow">
+            <section class="py-16 sm:py-20 lg:py-24">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white uppercase tracking-wider">Choose Your Challenge</h2>
+                        <p class="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">A curated collection of addictive minigames from across the grid.</p>
+                    </div>
+
+                    <!-- Games Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        
+                        <!-- Game Card 1 -->
+                        <a href="asteroidshooterpro.html" class="game-card block rounded-2xl overflow-hidden shadow-lg no-underline text-current">
+                            <div class="h-48 bg-black/20 flex items-center justify-center p-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-cyan-400 icon-glow -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                </svg>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-bold text-white">Asteroid Shooter Pro</h3>
+                                <p class="mt-2 text-gray-400 text-sm h-12">Fly a spaceship, shoot enemy planes, asteroids, and bosses, and upgrade your ship.</p>
+                                <div class="play-button w-full mt-6 font-semibold py-3 rounded-lg shadow-md text-center">
+                                    Play Now
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Game Card 2 -->
+                        <a href="towerdefense.html" class="game-card block rounded-2xl overflow-hidden shadow-lg no-underline text-current">
+                            <div class="h-48 bg-black/20 flex items-center justify-center p-4">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-cyan-400 icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" />
+                                </svg>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-bold text-white">Tower Defense Command</h3>
+                                <p class="mt-2 text-gray-400 text-sm h-12">A classic pixel-style tower defense game where strategy is key to survival.</p>
+                                <div class="play-button w-full mt-6 font-semibold py-3 rounded-lg shadow-md text-center">
+                                    Play Now
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <!-- Game Card 3 (Placeholder) -->
+                        <div class="game-card rounded-2xl overflow-hidden shadow-lg">
+                           <div class="h-48 bg-black/20 flex items-center justify-center p-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 text-cyan-400 icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56a14.98 14.98 0 00-5.84-2.56m0 0a14.98 14.98 0 00-5.84 2.56m5.84-2.56V4.72a6 6 0 0112 0v2.65a6 6 0 01-12 0v0z" />
+                                </svg>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-bold text-white">Puzzle Matrix</h3>
+                                <p class="mt-2 text-gray-400 text-sm h-12">Engage your mind with challenging logic puzzles and intricate patterns.</p>
+                                <button class="play-button w-full mt-6 font-semibold py-3 rounded-lg shadow-md">
+                                    Play Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add New Game Card -->
+                        <div class="game-card flex items-center justify-center rounded-2xl border-2 border-dashed border-gray-600 hover:border-cyan-500 transition-colors duration-300">
+                            <div class="text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                <p class="mt-2 font-semibold text-gray-400">Add New Game</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-6 px-4 sm:px-6 lg:px-8 mt-12 border-t">
+            <div class="container mx-auto text-center text-gray-500">
+                <p>&copy; 2025 GameGrid. All rights reserved.</p>
+                <div class="mt-4 flex justify-center space-x-6">
+                    <a href="#" class="hover:text-cyan-400 transition-colors duration-300">Twitter</a>
+                    <a href="#" class="hover:text-cyan-400 transition-colors duration-300">GitHub</a>
+                    <a href="#" class="hover:text-cyan-400 transition-colors duration-300">Discord</a>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+</body>
+</html>
+
+
